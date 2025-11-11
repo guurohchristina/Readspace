@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ReadSpace — Your Universal Book Hub</title>
+  <style>
+    :root {
+      --cedar-dark: #3b2314;
+      --cedar-medium: #6a3e24;
+      --cedar-light: #a9714b;
+      --cedar-gold: #d9b382;
+      --bg: #f5ede4;
+      --text: #2c1a0d;
+      font-family: "Poppins", sans-serif;
+    }
+
+    * {box-sizing: border-box; margin: 0; padding: 0;}
+    body {
+      background: linear-gradient(180deg, var(--bg), #fff);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    header {
+      background: linear-gradient(90deg, var(--cedar-dark), var(--cedar-medium));
+      color: #fff;
+      padding: 18px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header h1 {font-size: 1.6rem; letter-spacing: 1px;}
+
+    .search-bar input {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: none;
+      width: 220px;
+      outline: none;
+    }
+
+    main {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 36px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--cedar-dark);
+      border-left: 6px solid var(--cedar-light);
+      padding-left: 10px;
+      margin-bottom: 16px;
+    }
+
+    .library-grid, .shelf {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--cedar-gold);
+      color: var(--text);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      transition: transform 0.3s;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      transform: scale(1.05);
+      background: var(--cedar-light);
+      color: white;
+    }
+
+    .card img {width: 100%; height: 120px; object-fit: contain; background: #fff;}
+    .card h4 {padding: 10px; font-size: 1rem;}
+
+    .add-btn {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      background: var(--cedar-light);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      font-size: 30px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s;
+    }
+
+    .add-btn:hover {
+      transform: scale(1.1);
+      background: var(--cedar-medium);
+    }
+
+    input[type="file"] {display: none;}
+
+    .book {
+      background: var(--cedar-gold);
+      color: var(--text);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      transition: transform 0.3s;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .book img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      background: #fff;
+    }
+
+    .book-info {
+      padding: 12px;
+    }
+
+    .book-info h4 {font-size: 1rem; font-weight: 600;}
+    .book-info p {font-size: 0.85rem; color: #4e3b2a;}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📖 ReadSpace</h1>
+    <div class="search-bar">
+      <input type="text" placeholder="Search books..." />
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2 class="section-title">Online Libraries</h2>
+      <div class="library-grid">
+        <div class="card" onclick="openLibrary('https://read.amazon.com')">
+          <img src="https://iili.io/KmkLtNS.jpg" alt="Kindle">
+          <h4>Kindle</h4>
+        </div>
+        <div class="card" onclick="openLibrary('https://www.wattpad.com')">
+          <img src="https://iili.io/KmkSO8X.jpg" alt="Wattpad">
+          <h4>Wattpad</h4>
+        </div>
+        <div class="card" onclick="openLibrary('https://www.scribd.com')">
+          <img src="https://iili.io/Kmk75Hg.png" alt="Scribd">
+          <h4>Scribd</h4>
+        </div>
+        <div class="card" onclick="openLibrary('https://books.google.com')">
+          <img src="https://iili.io/Kmk7aDv.png" alt="Google Books">
+          <h4>Google Books</h4>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title">My Shelf</h2>
+      <div id="shelf" class="shelf"></div>
+    </section>
+  </main>
+
+  <button class="add-btn" onclick="document.getElementById('fileInput').click()">+</button>
+  <input type="file" id="fileInput" accept=".pdf,.epub,.txt" onchange="addBook(event)" />
+
+  <script>
+    const shelf = document.getElementById("shelf");
+    let books = JSON.parse(localStorage.getItem("books") || "[]");
+
+    function openLibrary(url) {
+      window.open(url, "_blank");
+    }
+
+    async function addBook(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const book = {
+          id: Date.now(),
+          title: file.name,
+          type: file.name.split('.').pop().toUpperCase(),
+          content: e.target.result
+        };
+        books.push(book);
+        localStorage.setItem("books", JSON.stringify(books));
+        renderShelf();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderShelf() {
+      shelf.innerHTML = "";
+      if (books.length === 0) {
+        shelf.innerHTML = '<p style="color:#6a3e24">No books on your shelf yet.</p>';
+      } else {
+        books.forEach(book => {
+          shelf.innerHTML += `
+            <div class="book" onclick="openBook('${book.id}')">
+              <img src="https://cdn-icons-png.flaticon.com/512/2232/2232688.png" alt="${book.title}">
+              <div class="book-info">
+                <h4>${book.title}</h4>
+                <p>Format: ${book.type}</p>
+              </div>
+            </div>
+          `;
+        });
+      }
+    }
+
+    function openBook(id) {
+      const book = books.find(b => b.id == id);
+      if (!book) return;
+      alert(`Opening "${book.title}" (Simulated Preview)`);
+    }
+
+    renderShelf();
+  </script>
+</body>
+</html>
